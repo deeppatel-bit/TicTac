@@ -12,6 +12,11 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Home route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Serve main page for room invite links (client will parse room code from URL)
 app.get('/join/:roomCode', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -175,7 +180,7 @@ io.on('connection', (socket) => {
 
     // Check if player name is already taken by an active player in the room
     const isNameTaken = room.players.some(p => p.name.toLowerCase() === formattedName.toLowerCase() && p.connected) ||
-                        room.spectators.some(s => s.name.toLowerCase() === formattedName.toLowerCase());
+      room.spectators.some(s => s.name.toLowerCase() === formattedName.toLowerCase());
 
     if (isNameTaken) {
       return socket.emit('errorMsg', 'That name is already in use in this room.');
@@ -189,7 +194,7 @@ io.on('connection', (socket) => {
       socketToPlayerMap.set(socket.id, { roomCode: upperCode, playerName: formattedName, role: 'player' });
 
       addSystemMessage(room, `${formattedName} joined the room as Player ${symbol}.`);
-      
+
       // If we now have 2 players, start the game
       if (room.players.length === 2 && room.status === 'waiting') {
         room.status = 'playing';
@@ -344,7 +349,7 @@ io.on('connection', (socket) => {
         // Start a 30s cleanup timeout
         const timeoutId = setTimeout(() => {
           console.log(`Cleanup room ${roomCode} after player timeout.`);
-          
+
           // Remove the disconnected player permanently or end the game
           const index = room.players.indexOf(player);
           if (index > -1) {
