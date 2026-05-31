@@ -9,6 +9,209 @@ let chatMessagesList = [];
 let gameStatus = null;
 let isMakingMove = false;
 let celebrated = false;
+let isFirstStateUpdate = true;
+
+// Sound Manager for synthesized Web Audio API sound effects
+const SoundManager = {
+  ctx: null,
+  isMuted: false,
+
+  init() {
+    const savedMuted = localStorage.getItem('sound_muted');
+    if (savedMuted !== null) {
+      this.isMuted = savedMuted === 'true';
+    } else {
+      this.isMuted = false;
+    }
+    this.updateToggleButton();
+  },
+
+  toggle() {
+    this.isMuted = !this.isMuted;
+    localStorage.setItem('sound_muted', this.isMuted);
+    this.updateToggleButton();
+    
+    // Play a brief click sound when turning sounds ON to confirm audibility
+    if (!this.isMuted) {
+      this.playClick();
+    }
+  },
+
+  updateToggleButton() {
+    const btn = document.getElementById('soundToggleBtn');
+    if (!btn) return;
+    
+    if (this.isMuted) {
+      btn.classList.add('muted');
+      btn.title = "Unmute Sounds";
+      btn.setAttribute('aria-label', 'Unmute Sounds');
+      btn.innerHTML = `
+        <svg class="sound-icon-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+      `;
+    } else {
+      btn.classList.remove('muted');
+      btn.title = "Mute Sounds";
+      btn.setAttribute('aria-label', 'Mute Sounds');
+      btn.innerHTML = `
+        <svg class="sound-icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+      `;
+    }
+  },
+
+  ensureContext() {
+    if (!this.ctx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        this.ctx = new AudioContextClass();
+      }
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  },
+
+  // Soft click sound when placing X or O (fast pitch/amplitude ramp)
+  playClick() {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.09);
+  },
+
+  // Soft modern chime sound for incoming chat messages (two offset sine waves)
+  playChatNotification() {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    
+    // Note 1 (E5): starting immediately
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(659.25, now);
+    gain1.gain.setValueAtTime(0.06, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.16);
+
+    // Note 2 (A5): starting 0.08s later
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880.00, now + 0.08);
+    gain2.gain.setValueAtTime(0.06, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.29);
+  },
+
+  // Triumphant winner celebration (C5 -> E5 -> G5 -> C6 major arpeggio with subtle slide/vibrato)
+  playWinnerCelebration() {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    const delays = [0, 0.08, 0.16, 0.24];
+    
+    notes.forEach((freq, idx) => {
+      const startTime = now + delays[idx];
+      const duration = idx === 3 ? 0.65 : 0.22;
+      
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      
+      if (idx === 3) {
+        osc.frequency.exponentialRampToValueAtTime(1055, startTime + 0.3);
+      }
+      
+      gain.gain.setValueAtTime(0.07, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.02);
+    });
+  },
+
+  // Futuristic digital descending chime/reset sound
+  playRestart() {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    
+    // Wave 1
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(600, now);
+    osc1.frequency.exponentialRampToValueAtTime(300, now + 0.22);
+    
+    gain1.gain.setValueAtTime(0.0, now);
+    gain1.gain.linearRampToValueAtTime(0.1, now + 0.04);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    
+    osc1.start(now);
+    osc1.stop(now + 0.23);
+
+    // Wave 2
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(450, now + 0.08);
+    osc2.frequency.exponentialRampToValueAtTime(225, now + 0.3);
+    
+    gain2.gain.setValueAtTime(0.0, now + 0.08);
+    gain2.gain.linearRampToValueAtTime(0.07, now + 0.11);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.31);
+  }
+};
 
 // DOM Elements - Navigation & Views
 const homeView = document.getElementById('home-view');
@@ -255,6 +458,22 @@ const leaveGame = () => {
 btnLeaveGame.addEventListener('click', leaveGame);
 btnOverlayLeave.addEventListener('click', leaveGame);
 
+// Sound Toggle Click and Initialization
+document.getElementById('soundToggleBtn').addEventListener('click', () => {
+  SoundManager.ensureContext();
+  SoundManager.toggle();
+});
+
+// Resume AudioContext on any interaction for modern browser autoplay policies
+['click', 'touchstart', 'keydown'].forEach(eventType => {
+  document.addEventListener(eventType, () => {
+    SoundManager.ensureContext();
+  }, { passive: true });
+});
+
+// Initialize sound preference
+SoundManager.init();
+
 
 // ----------------------------------------------------
 // SOCKET LISTENERS
@@ -283,6 +502,7 @@ socket.on('roomCreated', ({ roomCode, symbol }) => {
 socket.on('roomJoined', ({ roomCode, symbol, name }) => {
   myRoomCode = roomCode;
   mySymbol = symbol;
+  if (name) myName = name;
   roomCodeValue.textContent = roomCode;
   updateInviteLink(roomCode);
   
@@ -302,10 +522,17 @@ socket.on('errorMsg', (msg) => {
 });
 
 socket.on('gameStateUpdate', (state) => {
+  const oldStatus = gameStatus;
   // Sync core game variables
   myRoomCode = state.roomCode;
   gameStatus = state.status;
   isMakingMove = false; // Reset move lock
+
+  // Play subtle game restart sound if transition from ended to playing
+  const isRestart = (oldStatus === 'ended' && gameStatus === 'playing');
+  if (isRestart) {
+    SoundManager.playRestart();
+  }
 
   // 1. UPDATE PLAYERS STATE VISUALLY
   const playerX = state.players.find(p => p.symbol === 'X');
@@ -372,6 +599,7 @@ socket.on('gameStateUpdate', (state) => {
   }
 
   // 2. RENDER THE GAME BOARD CELLS
+  let cellPlaced = false;
   state.board.forEach((val, idx) => {
     const cell = cells[idx];
     
@@ -391,6 +619,9 @@ socket.on('gameStateUpdate', (state) => {
       // Inject SVG symbol only if it wasn't already rendered
       if (!currentSVG) {
         cell.innerHTML = val === 'X' ? SVG_X : SVG_O;
+        if (!isFirstStateUpdate) {
+          cellPlaced = true;
+        }
       }
 
       // Check if this cell is part of the winning line
@@ -401,6 +632,10 @@ socket.on('gameStateUpdate', (state) => {
       }
     }
   });
+
+  if (cellPlaced) {
+    SoundManager.playClick();
+  }
 
   // Show/Hide Restart Button based on game state and role
   if (state.status === 'ended' && mySymbol !== 'spectator') {
@@ -417,6 +652,7 @@ socket.on('gameStateUpdate', (state) => {
     if (!celebrated) {
       if (state.winner !== 'draw') {
         startCelebration();
+        SoundManager.playWinnerCelebration();
       }
       celebrated = true;
     }
@@ -460,6 +696,8 @@ socket.on('gameStateUpdate', (state) => {
   } else {
     gameOverlay.classList.remove('active');
   }
+
+  isFirstStateUpdate = false;
 });
 
 // Render the entire chat list from server state history
@@ -470,6 +708,17 @@ function renderChat(chatHistory) {
     return;
   }
   
+  // Play sound for incoming message from another user if already in room
+  if (chatMessagesList.length > 0 && chatHistory.length > chatMessagesList.length) {
+    for (let i = chatMessagesList.length; i < chatHistory.length; i++) {
+      const msg = chatHistory[i];
+      if (!msg.system && myName && msg.sender.toLowerCase() !== myName.toLowerCase()) {
+        SoundManager.playChatNotification();
+        break;
+      }
+    }
+  }
+
   chatMessagesList = chatHistory;
   chatMessages.innerHTML = '';
 

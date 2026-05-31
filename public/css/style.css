@@ -1178,3 +1178,65 @@ h1 {
     width: 100%;
   }
 }
+
+/* Sound Toggle Button and Styles */
+.sound-control {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+}
+
+.sound-toggle-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-bounce);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
+.sound-toggle-btn:hover {
+  background: rgba(0, 242, 254, 0.08);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 15px var(--neon-cyan-glow);
+  transform: scale(1.1);
+}
+
+.sound-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.sound-toggle-btn.muted {
+  color: var(--neon-magenta);
+  background: rgba(255, 8, 68, 0.03);
+  border-color: rgba(255, 8, 68, 0.2);
+}
+
+.sound-toggle-btn.muted:hover {
+  background: rgba(255, 8, 68, 0.08);
+  border-color: var(--neon-magenta);
+  box-shadow: 0 0 15px var(--neon-magenta-glow);
+}
+
+/* Responsive adjustment for sound toggle button position on mobile */
+@media (max-width: 768px) {
+  .sound-control {
+    top: 16px;
+    right: 16px;
+  }
+  
+  .sound-toggle-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
