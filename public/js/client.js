@@ -174,14 +174,34 @@ btnShareInvite.addEventListener('click', () => {
   }
 });
 
-// Auto-fill room code from URL invite links on load
+// Auto-fill room code from URL invite links on load and trigger simplified join screen
 window.addEventListener('DOMContentLoaded', () => {
   const match = window.location.pathname.match(/\/join\/([A-Z0-9]{6})/i);
   if (match) {
     const code = match[1].toUpperCase();
     roomCodeInput.value = code;
+    roomCodeInput.readOnly = true;
+    roomCodeInput.classList.add('readonly-field');
+    
+    // Enable invite-mode layout styling (hides create action & divider, styles join button as primary)
+    homeView.classList.add('invite-mode');
+    
+    // Update subtitle to highlight the room code invitation
+    const subtitle = homeView.querySelector('.subtitle');
+    if (subtitle) {
+      subtitle.innerHTML = `You have been invited to join room <span class="highlight-code">${code}</span>`;
+    }
+    
+    // Change join button text and style for invite context
+    btnJoinRoom.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3" />
+      </svg>
+      Join Active Game
+    `;
+    
     playerNameInput.focus();
-    showToast(`Invite Code ${code} loaded! Enter your nickname.`);
+    showToast(`Invite to room ${code} loaded!`);
   }
 });
 
