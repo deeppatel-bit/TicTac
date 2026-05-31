@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicTacNeon - Real-time Multiplayer Tic Tac Toe</title>
+  <meta name="description" content="Play Tic Tac Toe online with friends in real-time with live chat, dark neon design, and spectator mode.">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Celebration Canvas for Confetti/Glow effects -->
+  <canvas id="celebration-canvas" class="celebration-canvas" aria-hidden="true"></canvas>
+
+  <!-- Floating animated glow background blobs -->
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- 1. HOME VIEW -->
+    <div id="home-view" class="view active">
+      <header>
+        <h1 id="main-title">TICTACNEON</h1>
+        <p class="subtitle">Real-time multiplayer <span>Tic Tac Toe</span> with live chat</p>
+      </header>
+
+      <div class="home-layout">
+        <!-- Player Name Group -->
+        <div class="input-group">
+          <label for="playerNameInput">Your Name</label>
+          <input 
+            type="text" 
+            id="playerNameInput" 
+            class="input-field" 
+            placeholder="Enter nickname (e.g., Alex)" 
+            maxlength="12" 
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <!-- Create Room Action -->
+        <button id="btnCreateRoom" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>
+          Create New Game
+        </button>
+
+        <div class="divider">or join a game</div>
+
+        <!-- Join Room Form -->
+        <div class="input-group">
+          <label for="roomCodeInput">Room Code</label>
+          <input 
+            type="text" 
+            id="roomCodeInput" 
+            class="input-field" 
+            placeholder="ENTER 6-CHARACTER CODE" 
+            maxlength="6" 
+            style="text-transform: uppercase; text-align: center; letter-spacing: 2px; font-weight: 700;"
+            autocomplete="off"
+          >
+        </div>
+
+        <button id="btnJoinRoom" class="btn btn-secondary" style="width: 100%;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3"/></svg>
+          Join Game Room
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. GAME VIEW -->
+    <div id="game-view" class="view">
+      <!-- Game Room Header -->
+      <div class="room-header">
+        <div class="room-info">
+          <h2>TicTacNeon</h2>
+          <div class="room-tag">
+            <span>Room:</span>
+            <span id="roomCodeValue" class="room-code-display" title="Click to copy">------</span>
+          </div>
+          <div class="room-tag invite-tag">
+            <span>Invite:</span>
+            <span id="inviteLinkValue" class="invite-link-display" title="Click to copy">------</span>
+            <button id="btnCopyInvite" class="btn-icon" title="Copy Invite Link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+            <button id="btnShareInvite" class="btn-icon" title="Share Invite" style="display: none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            </button>
+          </div>
+        </div>
+        <div id="spectatorBadge" class="room-tag" style="background: rgba(255, 8, 68, 0.1); border-color: rgba(255, 8, 68, 0.2); display: none;">
+          <span style="color: var(--neon-magenta);">Spectating</span>
+        </div>
+      </div>
+
+      <!-- Main Game Grid & Chat Layout -->
+      <div class="game-layout">
+        <!-- Game grid and player status side -->
+        <div class="game-section">
+          
+          <!-- Players names & turn states -->
+          <div class="players-status">
+            <!-- Player X -->
+            <div id="playerCardX" class="player-card symbol-x">
+              <span class="player-symbol-badge symbol-x">X</span>
+              <span id="playerNameX" class="player-name">Waiting...</span>
+              <span id="playerStatusX" class="player-status-indicator">
+                <span class="status-dot"></span> Offline
+              </span>
+            </div>
+
+            <!-- Player O -->
+            <div id="playerCardO" class="player-card symbol-o">
+              <span class="player-symbol-badge symbol-o">O</span>
+              <span id="playerNameO" class="player-name">Waiting...</span>
+              <span id="playerStatusO" class="player-status-indicator">
+                <span class="status-dot"></span> Offline
+              </span>
+            </div>
+          </div>
+
+          <!-- Turn Indicator -->
+          <div id="turnIndicator" class="turn-indicator">
+            <span id="turnText">Waiting for Players...</span>
+          </div>
+
+          <!-- Board Grid -->
+          <div class="board-container">
+            <div class="board-grid" id="boardGrid">
+              <!-- Cells 0 to 8 -->
+              <button class="cell" data-index="0" aria-label="Cell 1"></button>
+              <button class="cell" data-index="1" aria-label="Cell 2"></button>
+              <button class="cell" data-index="2" aria-label="Cell 3"></button>
+              <button class="cell" data-index="3" aria-label="Cell 4"></button>
+              <button class="cell" data-index="4" aria-label="Cell 5"></button>
+              <button class="cell" data-index="5" aria-label="Cell 6"></button>
+              <button class="cell" data-index="6" aria-label="Cell 7"></button>
+              <button class="cell" data-index="7" aria-label="Cell 8"></button>
+              <button class="cell" data-index="8" aria-label="Cell 9"></button>
+            </div>
+          </div>
+
+          <!-- Bottom Control Row -->
+          <div class="game-controls">
+            <button id="btnLeaveGame" class="btn btn-secondary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+              Leave Room
+            </button>
+            <button id="btnRestartGame" class="btn btn-primary" style="display: none;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Restart Match
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat messages side drawer -->
+        <div class="chat-section">
+          <div class="chat-header">
+            <span class="chat-dot"></span>
+            <span>Live Room Chat</span>
+          </div>
+          
+          <div id="chatMessages" class="chat-messages">
+            <!-- Messages pop up here -->
+          </div>
+
+          <form id="chatForm" class="chat-input-form">
+            <input 
+              type="text" 
+              id="chatInput" 
+              class="chat-input" 
+              placeholder="Send message..." 
+              maxlength="150" 
+              autocomplete="off"
+            >
+            <button type="submit" class="chat-send-btn" aria-label="Send message">
+              <svg viewBox="0 0 24 24">
+                <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Game alerts and restart voting overlay screen -->
+      <div id="gameOverlay" class="game-overlay">
+        <div class="overlay-card">
+          <div id="overlayTitle" class="overlay-title">Victory!</div>
+          <p id="overlayText" class="overlay-text">Player X has won the match.</p>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button id="btnOverlayLeave" class="btn btn-secondary">Leave</button>
+            <button id="btnOverlayRestart" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Play Again
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Copied to clipboard/notification toast -->
+  <div id="toast" class="toast" role="alert">Room code copied!</div>
+
+  <!-- Socket.io and Client Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/client.js"></script>
+</body>
+</html>
