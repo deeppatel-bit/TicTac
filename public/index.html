@@ -31,14 +31,59 @@
       </button>
     </div>
 
-    <!-- 1. HOME VIEW -->
-    <div id="home-view" class="view active">
+    <!-- 0. LOBBY HOME VIEW -->
+    <div id="lobby-view" class="view active">
       <header>
-        <h1 id="main-title">TICTACTOE</h1>
+        <h1 id="lobby-title">NEONGAMEHUB</h1>
         <div class="creator-credit">
           Created by <span class="creator-name">Deep Patel <span class="lightning">⚡</span></span>
         </div>
-        <p class="subtitle">Real-time multiplayer <span>Tic Tac Toe</span> with live chat</p>
+        <p class="subtitle" style="margin-bottom: 25px;">Play Real-Time Multiplayer Games<br><span style="color: var(--neon-cyan); font-weight: 500; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; display: inline-block;">Chat • Invite • Compete</span></p>
+      </header>
+
+      <div class="games-grid">
+        <!-- Game Card 1: Tic Tac Toe -->
+        <div class="game-card neon-card-cyan" id="cardTicTacToe">
+          <div class="game-card-icon">🎮</div>
+          <h3>Tic Tac Toe</h3>
+          <p class="game-card-desc">The classic 3x3 grid battle. Play with a friend in real time with live scoreboard and sound effects.</p>
+          <ul class="game-card-features">
+            <li>⚡ Realtime multiplayer</li>
+            <li>💬 Live room chat</li>
+            <li>🏆 Live scoreboard</li>
+            <li>👥 Invite friends instantly</li>
+          </ul>
+          <button class="btn btn-primary btn-play" style="width: 100%; margin-top: auto;">Play Now</button>
+        </div>
+
+        <!-- Game Card 2: Truth or Dare -->
+        <div class="game-card neon-card-magenta" id="cardTruthOrDare">
+          <div class="game-card-icon">🔥</div>
+          <h3>Truth or Dare</h3>
+          <p class="game-card-desc">A fun multiplayer party game. Challenge your friends in a shared room with random prompt generators.</p>
+          <ul class="game-card-features">
+            <li>🎲 Random player selection</li>
+            <li>💬 Live room chat</li>
+            <li>✨ Cyber-neon prompt cards</li>
+            <li>👥 Up to 12 players</li>
+          </ul>
+          <button class="btn btn-primary btn-play" style="width: 100%; margin-top: auto;">Play Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. SETUP VIEW (REPLACING HOME VIEW) -->
+    <div id="setup-view" class="view">
+      <button id="btnBackToLobby" class="btn btn-secondary" style="align-self: flex-start; margin-bottom: 20px; padding: 8px 16px; font-size: 0.9rem;">
+        ← Back to Games
+      </button>
+
+      <header>
+        <h1 id="setup-title">TICTACTOE</h1>
+        <div class="creator-credit">
+          Created by <span class="creator-name">Deep Patel <span class="lightning">⚡</span></span>
+        </div>
+        <p class="setup-subtitle subtitle">Real-time multiplayer <span>game room</span> setup</p>
       </header>
 
       <div class="home-layout">
@@ -125,6 +170,21 @@
       <div class="game-layout">
         <!-- Game grid and player status side -->
         <div class="game-section">
+
+          <!-- Scoreboard -->
+          <div class="scoreboard" id="scoreboard">
+            <div class="scoreboard-player scoreboard-x">
+              <span id="scoreNameX" class="scoreboard-name">Waiting...</span>
+              <span class="scoreboard-trophy">🏆</span>
+              <span id="scoreValX" class="scoreboard-score">0</span>
+            </div>
+            <div class="scoreboard-vs">VS</div>
+            <div class="scoreboard-player scoreboard-o">
+              <span id="scoreValO" class="scoreboard-score">0</span>
+              <span class="scoreboard-trophy">🏆</span>
+              <span id="scoreNameO" class="scoreboard-name">Waiting...</span>
+            </div>
+          </div>
 
           <!-- Players names & turn states -->
           <div class="players-status">
@@ -229,6 +289,113 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- 3. TRUTH OR DARE ROOM VIEW -->
+    <div id="tod-room-view" class="view">
+      <!-- Game Room Header -->
+      <div class="room-header">
+        <div class="room-info">
+          <div class="brand-group">
+            <h2>Truth or Dare</h2>
+            <div class="creator-credit mini-credit">
+              Created by <span class="creator-name">Deep Patel <span class="lightning">⚡</span></span>
+            </div>
+          </div>
+          <div class="room-tag">
+            <span>Room:</span>
+            <span id="todRoomCodeValue" class="room-code-display" title="Click to copy">------</span>
+          </div>
+          <div class="room-tag invite-tag">
+            <span>Invite:</span>
+            <span id="todInviteLinkValue" class="invite-link-display" title="Click to copy">------</span>
+            <button id="btnTODCopyInvite" class="btn-icon" title="Copy Invite Link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Game Grid & Chat Layout -->
+      <div class="game-layout">
+        <!-- Truth or Dare Panel -->
+        <div class="game-section">
+          <!-- Active Hot Seat Card -->
+          <div class="hotseat-card" id="todHotseatCard">
+            <span class="hotseat-label">🔥 HOT SEAT 🔥</span>
+            <span id="todActivePlayer" class="hotseat-player">Waiting...</span>
+          </div>
+
+          <!-- Prompt Display Panel -->
+          <div class="tod-prompt-container">
+            <div id="todPromptType" class="tod-prompt-type">Select Category</div>
+            <div id="todPromptText" class="tod-prompt-text">Choose Truth or Dare to get a challenge!</div>
+          </div>
+
+          <!-- Action choice buttons -->
+          <div class="tod-actions" style="display: flex; gap: 16px; width: 100%; max-width: 340px; margin-bottom: 16px;">
+            <button id="btnTODTruth" class="btn btn-truth" style="flex: 1; padding: 16px 20px; font-weight: 700; font-size: 1.1rem; border-radius: var(--radius-md); border: none; cursor: pointer; transition: var(--transition-bounce);">
+              💬 Truth
+            </button>
+            <button id="btnTODDare" class="btn btn-dare" style="flex: 1; padding: 16px 20px; font-weight: 700; font-size: 1.1rem; border-radius: var(--radius-md); border: none; cursor: pointer; transition: var(--transition-bounce);">
+              ⚡ Dare
+            </button>
+          </div>
+
+          <!-- Extra control buttons -->
+          <div class="tod-game-controls" style="width: 100%; max-width: 340px; margin-bottom: 24px;">
+            <button id="btnTODRollPlayer" class="btn btn-primary" style="width: 100%; padding: 14px 20px;">
+              🎲 Roll Next Player
+            </button>
+          </div>
+
+          <!-- Participant List -->
+          <div class="tod-participants-container">
+            <h3>Room Players</h3>
+            <div id="todParticipantsList" class="tod-participants-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Bottom Control Row -->
+          <div class="game-controls">
+            <button id="btnLeaveTOD" class="btn btn-secondary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+              Leave Room
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat messages side drawer -->
+        <div class="chat-section">
+          <div class="chat-header">
+            <span class="chat-dot"></span>
+            <span>Live Room Chat</span>
+          </div>
+
+          <div id="todChatMessages" class="chat-messages">
+            <!-- Messages pop up here -->
+          </div>
+
+          <form id="todChatForm" class="chat-input-form">
+            <input type="text" id="todChatInput" class="chat-input" placeholder="Send message..." maxlength="150"
+              autocomplete="off">
+            <button type="submit" class="chat-send-btn" aria-label="Send message">
+              <svg viewBox="0 0 24 24">
+                <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
+              </svg>
+            </button>
+          </form>
+        </div>
+
+      </div>
     </div>
 
   </div>

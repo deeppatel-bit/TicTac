@@ -6,10 +6,12 @@ let myRoomCode = null;
 let mySymbol = null; // 'X', 'O', or 'spectator'
 let myName = null;
 let chatMessagesList = [];
+let todChatMessagesList = [];
 let gameStatus = null;
 let isMakingMove = false;
 let celebrated = false;
 let isFirstStateUpdate = true;
+let selectedGameType = 'tictactoe';
 
 // Sound Manager for synthesized Web Audio API sound effects
 const SoundManager = {
@@ -214,8 +216,16 @@ const SoundManager = {
 };
 
 // DOM Elements - Navigation & Views
-const homeView = document.getElementById('home-view');
+const lobbyView = document.getElementById('lobby-view');
+const setupView = document.getElementById('setup-view');
 const gameView = document.getElementById('game-view');
+const todRoomView = document.getElementById('tod-room-view');
+
+// DOM Elements - Lobby
+const cardTicTacToe = document.getElementById('cardTicTacToe');
+const cardTruthOrDare = document.getElementById('cardTruthOrDare');
+const btnBackToLobby = document.getElementById('btnBackToLobby');
+const setupTitle = document.getElementById('setup-title');
 
 // DOM Elements - Inputs
 const playerNameInput = document.getElementById('playerNameInput');
@@ -246,6 +256,12 @@ const spectatorBadge = document.getElementById('spectatorBadge');
 const turnIndicator = document.getElementById('turnIndicator');
 const turnText = document.getElementById('turnText');
 
+// DOM Elements - Scoreboard
+const scoreNameX = document.getElementById('scoreNameX');
+const scoreNameO = document.getElementById('scoreNameO');
+const scoreValX = document.getElementById('scoreValX');
+const scoreValO = document.getElementById('scoreValO');
+
 // DOM Elements - Chat
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
@@ -257,6 +273,22 @@ const overlayTitle = document.getElementById('overlayTitle');
 const overlayText = document.getElementById('overlayText');
 const btnOverlayLeave = document.getElementById('btnOverlayLeave');
 const btnOverlayRestart = document.getElementById('btnOverlayRestart');
+
+// DOM Elements - Truth or Dare Room
+const todRoomCodeValue = document.getElementById('todRoomCodeValue');
+const todInviteLinkValue = document.getElementById('todInviteLinkValue');
+const btnTODCopyInvite = document.getElementById('btnTODCopyInvite');
+const todActivePlayer = document.getElementById('todActivePlayer');
+const todPromptType = document.getElementById('todPromptType');
+const todPromptText = document.getElementById('todPromptText');
+const btnTODTruth = document.getElementById('btnTODTruth');
+const btnTODDare = document.getElementById('btnTODDare');
+const btnTODRollPlayer = document.getElementById('btnTODRollPlayer');
+const todParticipantsList = document.getElementById('todParticipantsList');
+const btnLeaveTOD = document.getElementById('btnLeaveTOD');
+const todChatMessages = document.getElementById('todChatMessages');
+const todChatForm = document.getElementById('todChatForm');
+const todChatInput = document.getElementById('todChatInput');
 
 // DOM Elements - Toast
 const toast = document.getElementById('toast');
@@ -287,26 +319,30 @@ function showToast(message) {
 // Switch between views
 function showView(viewToShow) {
   // Fade out current views
-  [homeView, gameView].forEach(v => {
-    if (v.classList.contains('active')) {
+  [lobbyView, setupView, gameView, todRoomView].forEach(v => {
+    if (v && v.classList.contains('active')) {
       v.style.opacity = 0;
       v.style.transform = 'translateY(15px)';
     }
   });
 
   setTimeout(() => {
-    [homeView, gameView].forEach(v => {
-      v.classList.remove('active');
-      v.style.display = 'none';
+    [lobbyView, setupView, gameView, todRoomView].forEach(v => {
+      if (v) {
+        v.classList.remove('active');
+        v.style.display = 'none';
+      }
     });
 
-    viewToShow.style.display = 'flex';
-    // Small timeout for browser to process display change before class transition
-    setTimeout(() => {
-      viewToShow.classList.add('active');
-      viewToShow.style.opacity = 1;
-      viewToShow.style.transform = 'translateY(0)';
-    }, 50);
+    if (viewToShow) {
+      viewToShow.style.display = 'flex';
+      // Small timeout for browser to process display change before class transition
+      setTimeout(() => {
+        viewToShow.classList.add('active');
+        viewToShow.style.opacity = 1;
+        viewToShow.style.transform = 'translateY(0)';
+      }, 50);
+    }
   }, 350);
 }
 
@@ -322,7 +358,7 @@ btnCreateRoom.addEventListener('click', () => {
     return showToast('Please enter your name first.');
   }
   myName = name;
-  socket.emit('createRoom', { playerName: name });
+  socket.emit('createRoom', { playerName: name, gameType: selectedGameType });
 });
 
 // Join Room Clicked
@@ -377,6 +413,40 @@ btnShareInvite.addEventListener('click', () => {
   }
 });
 
+// Lobby Card Clicks
+cardTicTacToe.addEventListener('click', () => {
+  selectedGameType = 'tictactoe';
+  setupTitle.textContent = 'TICTACTOE';
+  
+  // Reset invite-mode styling if it was set
+  setupView.classList.remove('invite-mode');
+  btnBackToLobby.style.display = 'inline-flex';
+  const subtitle = setupView.querySelector('.setup-subtitle');
+  if (subtitle) {
+    subtitle.innerHTML = `Real-time multiplayer <span>Tic Tac Toe</span> with live chat`;
+  }
+  btnJoinRoom.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3" />
+    </svg>
+    Join Game Room
+  `;
+  roomCodeInput.value = '';
+  roomCodeInput.readOnly = false;
+  roomCodeInput.classList.remove('readonly-field');
+
+  showView(setupView);
+  playerNameInput.focus();
+});
+
+cardTruthOrDare.addEventListener('click', () => {
+  showToast("🚧 Truth: Ye game abhi ready nahi hai. Dare: Is button ko 100 baar click karo unlock karne ke liye (Mazaak kar rahe hain, jaldi hi aayega! 😂)");
+});
+
+btnBackToLobby.addEventListener('click', () => {
+  showView(lobbyView);
+});
+
 // Auto-fill room code from URL invite links on load and trigger simplified join screen
 window.addEventListener('DOMContentLoaded', () => {
   const match = window.location.pathname.match(/\/join\/([A-Z0-9]{6})/i);
@@ -387,10 +457,11 @@ window.addEventListener('DOMContentLoaded', () => {
     roomCodeInput.classList.add('readonly-field');
     
     // Enable invite-mode layout styling (hides create action & divider, styles join button as primary)
-    homeView.classList.add('invite-mode');
+    setupView.classList.add('invite-mode');
+    btnBackToLobby.style.display = 'none';
     
     // Update subtitle to highlight the room code invitation
-    const subtitle = homeView.querySelector('.subtitle');
+    const subtitle = setupView.querySelector('.setup-subtitle');
     if (subtitle) {
       subtitle.innerHTML = `You have been invited to join room <span class="highlight-code">${code}</span>`;
     }
@@ -403,6 +474,7 @@ window.addEventListener('DOMContentLoaded', () => {
       Join Active Game
     `;
     
+    showView(setupView);
     playerNameInput.focus();
     showToast(`Invite to room ${code} loaded!`);
   }
@@ -439,11 +511,45 @@ chatForm.addEventListener('submit', (e) => {
   chatInput.focus();
 });
 
+// Truth or Dare Room Action Listeners
+btnTODTruth.addEventListener('click', () => {
+  socket.emit('requestTODPrompt', { category: 'truth' });
+});
+
+btnTODDare.addEventListener('click', () => {
+  socket.emit('requestTODPrompt', { category: 'dare' });
+});
+
+btnTODRollPlayer.addEventListener('click', () => {
+  socket.emit('rollTODPlayer');
+});
+
+btnLeaveTOD.addEventListener('click', leaveGame);
+
+todChatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = todChatInput.value.trim();
+  if (!text) return;
+
+  socket.emit('sendMessage', { text });
+  todChatInput.value = '';
+  todChatInput.focus();
+});
+
+btnTODCopyInvite.addEventListener('click', () => {
+  if (myRoomCode) {
+    const inviteUrl = `${window.location.origin}/join/${myRoomCode}`;
+    navigator.clipboard.writeText(inviteUrl)
+      .then(() => showToast('Invite link copied to clipboard!'))
+      .catch(() => showToast('Failed to copy invite link.'));
+  }
+});
+
 // Request Restart Game
-const requestRestart = () => {
+function requestRestart() {
   socket.emit('requestRestart');
   showToast('Restart vote submitted!');
-};
+}
 btnRestartGame.addEventListener('click', requestRestart);
 btnOverlayRestart.addEventListener('click', () => {
   requestRestart();
@@ -451,10 +557,10 @@ btnOverlayRestart.addEventListener('click', () => {
 });
 
 // Leave Game
-const leaveGame = () => {
+function leaveGame() {
   // Simple page refresh is the cleanest way to disconnect and reset variables
   window.location.reload();
-};
+}
 btnLeaveGame.addEventListener('click', leaveGame);
 btnOverlayLeave.addEventListener('click', leaveGame);
 
@@ -489,31 +595,48 @@ function updateInviteLink(roomCode) {
   }
 }
 
-socket.on('roomCreated', ({ roomCode, symbol }) => {
+socket.on('roomCreated', ({ roomCode, symbol, gameType }) => {
   myRoomCode = roomCode;
   mySymbol = symbol;
-  roomCodeValue.textContent = roomCode;
-  updateInviteLink(roomCode);
-  spectatorBadge.style.display = 'none';
-  showView(gameView);
+  selectedGameType = gameType || 'tictactoe';
+  
+  if (selectedGameType === 'truthordare') {
+    todRoomCodeValue.textContent = roomCode;
+    const inviteUrl = `${window.location.origin}/join/${roomCode}`;
+    todInviteLinkValue.textContent = inviteUrl;
+    showView(todRoomView);
+  } else {
+    roomCodeValue.textContent = roomCode;
+    updateInviteLink(roomCode);
+    spectatorBadge.style.display = 'none';
+    showView(gameView);
+  }
   showToast('Room created successfully!');
 });
 
-socket.on('roomJoined', ({ roomCode, symbol, name }) => {
+socket.on('roomJoined', ({ roomCode, symbol, name, gameType }) => {
   myRoomCode = roomCode;
   mySymbol = symbol;
+  selectedGameType = gameType || 'tictactoe';
   if (name) myName = name;
-  roomCodeValue.textContent = roomCode;
-  updateInviteLink(roomCode);
-  
-  if (symbol === 'spectator') {
-    spectatorBadge.style.display = 'inline-flex';
-    btnRestartGame.style.display = 'none';
-  } else {
-    spectatorBadge.style.display = 'none';
-  }
 
-  showView(gameView);
+  if (selectedGameType === 'truthordare') {
+    todRoomCodeValue.textContent = roomCode;
+    const inviteUrl = `${window.location.origin}/join/${roomCode}`;
+    todInviteLinkValue.textContent = inviteUrl;
+    showView(todRoomView);
+  } else {
+    roomCodeValue.textContent = roomCode;
+    updateInviteLink(roomCode);
+    
+    if (symbol === 'spectator') {
+      spectatorBadge.style.display = 'inline-flex';
+      btnRestartGame.style.display = 'none';
+    } else {
+      spectatorBadge.style.display = 'none';
+    }
+    showView(gameView);
+  }
   showToast(`Joined as ${symbol === 'spectator' ? 'spectator' : 'Player ' + symbol}`);
 });
 
@@ -522,12 +645,18 @@ socket.on('errorMsg', (msg) => {
 });
 
 socket.on('gameStateUpdate', (state) => {
-  const oldStatus = gameStatus;
   // Sync core game variables
   myRoomCode = state.roomCode;
+  selectedGameType = state.gameType || 'tictactoe';
   gameStatus = state.status;
   isMakingMove = false; // Reset move lock
 
+  if (selectedGameType === 'truthordare') {
+    renderTODRoom(state);
+    return;
+  }
+
+  const oldStatus = gameStatus;
   // Play subtle game restart sound if transition from ended to playing
   const isRestart = (oldStatus === 'ended' && gameStatus === 'playing');
   if (isRestart) {
@@ -547,9 +676,19 @@ socket.on('gameStateUpdate', (state) => {
     } else {
       playerStatusX.innerHTML = '<span class="status-dot"></span> Offline';
     }
+
+    if (scoreNameX && scoreValX) {
+      scoreNameX.textContent = playerX.name;
+      scoreValX.textContent = state.scores ? state.scores.X : 0;
+    }
   } else {
     playerNameX.textContent = 'Waiting...';
     playerStatusX.innerHTML = '<span class="status-dot"></span> Empty';
+
+    if (scoreNameX && scoreValX) {
+      scoreNameX.textContent = 'Waiting...';
+      scoreValX.textContent = '0';
+    }
   }
 
   if (playerO) {
@@ -561,9 +700,19 @@ socket.on('gameStateUpdate', (state) => {
     } else {
       playerStatusO.innerHTML = '<span class="status-dot"></span> Offline';
     }
+
+    if (scoreNameO && scoreValO) {
+      scoreNameO.textContent = playerO.name;
+      scoreValO.textContent = state.scores ? state.scores.O : 0;
+    }
   } else {
     playerNameO.textContent = 'Waiting...';
     playerStatusO.innerHTML = '<span class="status-dot"></span> Empty';
+
+    if (scoreNameO && scoreValO) {
+      scoreNameO.textContent = 'Waiting...';
+      scoreValO.textContent = '0';
+    }
   }
 
   // Highlight whose turn it is
@@ -855,4 +1004,82 @@ function startCelebration() {
   }
   spawnConfetti();
   animateCelebration();
+}
+
+function renderTODRoom(state) {
+  const activeName = state.todState.activePlayer || 'Waiting...';
+  todActivePlayer.textContent = activeName;
+
+  const isMyHotSeat = (activeName === myName);
+  if (isMyHotSeat) {
+    document.getElementById('todHotseatCard').classList.add('active-hotseat');
+  } else {
+    document.getElementById('todHotseatCard').classList.remove('active-hotseat');
+  }
+
+  if (state.todState.currentPrompt) {
+    todPromptType.textContent = state.todState.currentType.toUpperCase();
+    todPromptType.className = `tod-prompt-type type-${state.todState.currentType}`;
+    todPromptText.textContent = state.todState.currentPrompt;
+  } else {
+    todPromptType.textContent = 'Select Category';
+    todPromptType.className = 'tod-prompt-type';
+    todPromptText.textContent = 'Choose Truth or Dare to get a challenge!';
+  }
+
+  todParticipantsList.innerHTML = '';
+  state.players.forEach(p => {
+    const pill = document.createElement('div');
+    pill.className = `tod-player-pill ${p.connected ? 'online' : 'offline'} ${p.name === state.todState.activePlayer ? 'hotseat' : ''}`;
+    pill.innerHTML = `
+      <span class="tod-player-dot"></span>
+      <span class="tod-player-name">${p.name}</span>
+      ${p.name === state.todState.activePlayer ? '<span class="tod-player-badge">🔥 Hot Seat</span>' : ''}
+    `;
+    todParticipantsList.appendChild(pill);
+  });
+
+  renderTODChat(state.chatHistory);
+}
+
+function renderTODChat(chatHistory) {
+  if (chatHistory.length === todChatMessagesList.length && 
+      JSON.stringify(chatHistory) === JSON.stringify(todChatMessagesList)) {
+    return;
+  }
+  
+  if (todChatMessagesList.length > 0 && chatHistory.length > todChatMessagesList.length) {
+    for (let i = todChatMessagesList.length; i < chatHistory.length; i++) {
+      const msg = chatHistory[i];
+      if (!msg.system && myName && msg.sender.toLowerCase() !== myName.toLowerCase()) {
+        SoundManager.playChatNotification();
+        break;
+      }
+    }
+  }
+
+  todChatMessagesList = chatHistory;
+  todChatMessages.innerHTML = '';
+
+  chatHistory.forEach(msg => {
+    const msgDiv = document.createElement('div');
+    
+    if (msg.system) {
+      msgDiv.className = 'message system';
+      msgDiv.innerHTML = `<span>${msg.text}</span>`;
+    } else {
+      const isSelf = msg.sender.toLowerCase() === myName.toLowerCase();
+      msgDiv.className = `message ${isSelf ? 'sent' : 'received'}`;
+      
+      const displayName = isSelf ? 'You' : msg.sender;
+      msgDiv.innerHTML = `
+        <span class="msg-sender">${displayName}</span>
+        <span class="msg-content">${escapeHTML(msg.text)}</span>
+        <span class="msg-time">${msg.timestamp}</span>
+      `;
+    }
+    todChatMessages.appendChild(msgDiv);
+  });
+
+  todChatMessages.scrollTop = todChatMessages.scrollHeight;
 }
